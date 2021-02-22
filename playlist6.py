@@ -7,7 +7,8 @@ warnings.filterwarnings("ignore", message="woqlview need "
                                           "to be used in Jupyter notebook.\n")
 
 # Assuming that the user as pip installed terminusdb-client and
-# terminusdb-client[dataframe], as well as has TerminusDB open.
+# terminusdb-client[dataframe], as well as has TerminusDB open and
+# access to the a231songs database.
 from terminusdb_client import WOQLQuery, WOQLClient
 
 
@@ -24,22 +25,28 @@ def connect_server() -> WOQLClient:
 
     return song_client
 
+# Assertion commented out to save memory.
+# assertion_server = WOQLClient("https://127.0.0.1:6363")
+# assertion_server.connect(user="admin", account="admin",
+# key="root", dbid="a231songs")
+# assert(assertion_server.server()== "https://127.0.0.1:6363/")
+
 
 def add_schema(song_client: WOQLClient) -> None:
     """Creates and adds the schema, if it is not already added.
     Safe to attempt to add repeatedly, since it is idempotent."""
     WOQLQuery().woql_and(
-        WOQLQuery().doctype("scm:Song")
-                   .label("Song")
-                   .description("A song title.")
-                   .cardinality(1)
-                   .property("scm:artist", "xsd:string")
-                   .label("artist")
-                   .cardinality(1)
-                   .property("scm:length", "xsd:string")
-                   .label("song length")
-                   .property("scm:album", "xsd:string")
-                   .label("album")
+            WOQLQuery().doctype("scm:Song")
+            .label("Song")
+            .description("A song title.")
+            .cardinality(1)
+            .property("scm:artist", "xsd:string")
+            .label("artist")
+            .cardinality(1)
+            .property("scm:length", "xsd:string")
+            .label("song length")
+            .property("scm:album", "xsd:string")
+            .label("album")
     ).execute(song_client, "Adding song object to schema")
 
 
@@ -49,10 +56,10 @@ def add_song(song_title: str, song_length: str, song_artist: str,
     message = "Added: " + song_title + "\n"
 
     query = WOQLQuery().woql_and(
-        WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
-                   .property("scm:artist", str(song_artist))
-                   .property("scm:length", str(song_length))
-                   .property("scm:album", str(song_album))
+            WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
+            .property("scm:artist", str(song_artist))
+            .property("scm:length", str(song_length))
+            .property("scm:album", str(song_album))
     )
     query.execute(song_client, message)
 
