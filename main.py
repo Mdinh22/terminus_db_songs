@@ -6,6 +6,8 @@ import warnings
 warnings.filterwarnings("ignore", message="woqlview need "
                                           "to be used in Jupyter notebook.\n")
 
+# Assuming that the user as pip installed terminusdb-client and
+# terminusdb-client[dataframe], as well as has TerminusDB open.
 from terminusdb_client import WOQLQuery, WOQLClient
 
 
@@ -44,7 +46,7 @@ def add_schema(song_client) -> None:
 def add_song(song_title, song_length, song_artist,
              song_album, song_client) -> None:
     """Adds a song to the database."""
-    message = "Added: " + song_title
+    message = "Added: " + song_title + "\n"
 
     query = WOQLQuery().woql_and(
         WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
@@ -139,7 +141,7 @@ def edit_menu(song_client) -> None:
 
     elif int(choice) == 3:
         song_title = input("Please enter the song title. ")
-
+        new_length = 0
         positive_integer = False
         while not positive_integer:
             str_new_length = input("Please enter the new length, as a positive "
@@ -150,7 +152,7 @@ def edit_menu(song_client) -> None:
             if int(new_length) > 0:
                 positive_integer = True
 
-            edit_song_length(song_title, new_length, song_client)
+        edit_song_length(song_title, new_length, song_client)
 
 
 def add_menu(song_client) -> None:
