@@ -25,48 +25,41 @@ def connect_server() -> WOQLClient:
     return song_client
 
 
-def add_schema(song_client) -> None:
+def add_schema(song_client: WOQLClient) -> None:
     """Creates and adds the schema, if it is not already added.
     Safe to attempt to add repeatedly, since it is idempotent."""
     WOQLQuery().woql_and(
         WOQLQuery().doctype("scm:Song")
-            .label("Song")
-            .description("A song title.")
-            .cardinality(1)
-            .property("scm:artist", "xsd:string")
-            .label("artist")
-            .cardinality(1)
-            .property("scm:length", "xsd:string")
-            .label("song length")
-            .property("scm:album", "xsd:string")
-            .label("album")
+                   .label("Song")
+                   .description("A song title.")
+                   .cardinality(1)
+                   .property("scm:artist", "xsd:string")
+                   .label("artist")
+                   .cardinality(1)
+                   .property("scm:length", "xsd:string")
+                   .label("song length")
+                   .property("scm:album", "xsd:string")
+                   .label("album")
     ).execute(song_client, "Adding song object to schema")
 
 
-def add_song(song_title, song_length, song_artist,
+def add_song(song_title: str, song_length: str, song_artist: str,
              song_album, song_client) -> None:
     """Adds a song to the database."""
     message = "Added: " + song_title + "\n"
 
     query = WOQLQuery().woql_and(
         WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
-            .property("scm:artist", str(song_artist))
-            .property("scm:length", str(song_length))
-            .property("scm:album", str(song_album))
+                   .property("scm:artist", str(song_artist))
+                   .property("scm:length", str(song_length))
+                   .property("scm:album", str(song_album))
     )
     query.execute(song_client, message)
 
     print(message)
 
 
-def list_split(list_to_split, n) -> zip:
-    """Helper function to split the list of queries into groups
-    of four (song title, album, artist, length) using a generator."""
-    for i in range(0, len(list_to_split), n):
-        yield list_to_split[i:i + n]
-
-
-def view_songs(song_client) -> None:
+def view_songs(song_client: WOQLClient) -> None:
     """Prints out the songs in the database."""
     song_query = WOQLQuery() \
         .limit(100) \
@@ -85,15 +78,16 @@ def view_songs(song_client) -> None:
         print()
 
 
-def remove_song(param, song_client) -> None:
+def remove_song(song_to_remove: str, song_client: WOQLClient) -> None:
     """Removes a song based on the entered title."""
-    WOQLQuery().delete_object("doc:" + param) \
-        .execute(song_client, "Deleted" + param)
+    WOQLQuery().delete_object("doc:" + song_to_remove) \
+        .execute(song_client, "Deleted" + song_to_remove)
 
-    print("Removed " + param + ", if it was present.")
+    print("Removed " + song_to_remove + ", if it was present.")
 
 
-def edit_song_artist(title, new_artist, song_client) -> None:
+def edit_song_artist(title: str, new_artist: str,
+                     song_client: WOQLClient) -> None:
     """Edits a song's artist'."""
     WOQLQuery().woql_and(
         WOQLQuery().triple("doc:" + title, "scm:artist", "v:artist"),
@@ -102,7 +96,8 @@ def edit_song_artist(title, new_artist, song_client) -> None:
     ).execute(song_client, "Testing edit_song")
 
 
-def edit_song_album(title, new_album, song_client) -> None:
+def edit_song_album(title: str, new_album: str,
+                    song_client: WOQLClient) -> None:
     """Edits a song's album."""
     WOQLQuery().woql_and(
         WOQLQuery().triple("doc:" + title, "scm:album", "v:album"),
@@ -111,7 +106,8 @@ def edit_song_album(title, new_album, song_client) -> None:
     ).execute(song_client, "Testing edit_song")
 
 
-def edit_song_length(title, new_length, song_client) -> None:
+def edit_song_length(title: str, new_length: int,
+                     song_client: WOQLClient) -> None:
     """Edits a song's length."""
     WOQLQuery().woql_and(
         WOQLQuery().triple("doc:" + title, "scm:length", "v:length"),
@@ -120,7 +116,7 @@ def edit_song_length(title, new_length, song_client) -> None:
     ).execute(song_client, "Testing edit_song")
 
 
-def edit_menu(song_client) -> None:
+def edit_menu(song_client: WOQLClient) -> None:
     """Menu for choosing which attribute to edit."""
     choice = input("Please enter a decision.\n"
                    "[1] Change a song's artist.\n"
@@ -144,8 +140,8 @@ def edit_menu(song_client) -> None:
         new_length = 0
         positive_integer = False
         while not positive_integer:
-            str_new_length = input("Please enter the new length, as a positive "
-                                   "integer representing the length "
+            str_new_length = input("Please enter the new length, as a "
+                                   "positive integer representing the length "
                                    "of the song in seconds. ")
             new_length = int(str_new_length)
 
@@ -155,7 +151,7 @@ def edit_menu(song_client) -> None:
         edit_song_length(song_title, new_length, song_client)
 
 
-def add_menu(song_client) -> None:
+def add_menu(song_client: WOQLClient) -> None:
     """Series of prompts to add a song."""
     name = input("Please enter the song's name. ")
     artist = input("Please enter the artist. ")
@@ -165,7 +161,7 @@ def add_menu(song_client) -> None:
     add_song(name, length, artist, album, song_client)
 
 
-def remove_menu(song_client) -> None:
+def remove_menu(song_client: WOQLClient) -> None:
     """Prompt for singular removal of a song."""
     song_to_remove = input("Please enter a song title "
                            "to remove from the database: ")
@@ -173,7 +169,7 @@ def remove_menu(song_client) -> None:
     remove_song(song_to_remove, song_client)
 
 
-def main_menu(song_client) -> None:
+def main_menu(song_client: WOQLClient) -> None:
     """Main menu for user to choose actions."""
     finished = False
     while not finished:
