@@ -9,3 +9,4 @@ Provides a menu for:
 4 - Editing existing songs.
 
 Requires TerminusDB (installable via pip), the TerminusHub open, and the proper database downloaded.
+Requires pygames (installable via pip)
