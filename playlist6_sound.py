@@ -317,9 +317,17 @@ def find_menu(song_client: WOQLClient) -> None:
             print("The option that you have inputted is invalid. Try again.")
 
 
-def play_song() -> None:
+def play_song(song_client: WOQLClient) -> None:
     """Downloads and plays a song based on the entered title,
     if it is hosted on project github."""
+    song_query = WOQLQuery() \
+        .limit(100) \
+        .triple("v:song_length", "v:artist", "v:album").execute(song_client)
+
+    query_results = song_query.get("bindings")
+    zip_of_queries = zip(*(iter(query_results),) * 4)
+    list_of_queries = list(zip_of_queries)
+
     while(True):
         song_to_play = input("Enter a song title to be played. "
                              "It must be hosted on "
@@ -372,7 +380,7 @@ def main_menu(song_client: WOQLClient) -> None:
         elif int(choice) == 5:
             find_menu(song_client)
         elif int(choice) == 6:
-            play_song()
+            play_song(song_client)
         elif int(choice) == 7:
             break
         else:
