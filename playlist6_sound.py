@@ -1,6 +1,12 @@
 import warnings
-from comtypes.client import CreateObject
-from comtypes.gen import SpeechLib 
+import urllib.request
+import urllib.error
+import os
+import time
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+# Ignoring pygame welcome message
+import pygame
 
 # Addressing a known issue regarding warnings in the TerminusDB code
 # Not PEP8 friendly but the warning needs to ignored before importing
@@ -20,12 +26,13 @@ def connect_server() -> WOQLClient:
     user = "admin"
     account = "admin"
     key = "root"
-    dbid = "a231songs"
+    dbid = "a231_songs_features"
 
     song_client = WOQLClient(server_url)
     song_client.connect(user=user, account=account, key=key, db=dbid)
 
     return song_client
+
 
 # Assertion commented out to save memory.
 # assertion_server = WOQLClient("https://127.0.0.1:6363")
@@ -38,17 +45,17 @@ def add_schema(song_client: WOQLClient) -> None:
     """Creates and adds the schema, if it is not already added.
     Safe to attempt to add repeatedly, since it is idempotent."""
     WOQLQuery().woql_and(
-            WOQLQuery().doctype("scm:Song")
-            .label("Song")
-            .description("A song title.")
-            .cardinality(1)
-            .property("scm:artist", "xsd:string")
-            .label("artist")
-            .cardinality(1)
-            .property("scm:length", "xsd:string")
-            .label("song length")
-            .property("scm:album", "xsd:string")
-            .label("album")
+        WOQLQuery().doctype("scm:Song")
+        .label("Song")
+        .description("A song title.")
+        .cardinality(1)
+        .property("scm:artist", "xsd:string")
+        .label("artist")
+        .cardinality(1)
+        .property("scm:length", "xsd:string")
+        .label("song length")
+        .property("scm:album", "xsd:string")
+        .label("album")
     ).execute(song_client, "Adding song object to schema")
 
 
@@ -58,10 +65,10 @@ def add_song(song_title: str, song_length: str, song_artist: str,
     message = "Added: " + song_title + "\n"
 
     query = WOQLQuery().woql_and(
-            WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
-            .property("scm:artist", str(song_artist))
-            .property("scm:length", str(song_length))
-            .property("scm:album", str(song_album))
+        WOQLQuery().insert("doc:" + str(song_title), "scm:Song")
+        .property("scm:artist", str(song_artist))
+        .property("scm:length", str(song_length))
+        .property("scm:album", str(song_album))
     )
     query.execute(song_client, message)
 
@@ -131,8 +138,8 @@ def edit_menu(song_client: WOQLClient) -> None:
                    "[1] Change a song's artist.\n"
                    "[2] Change a song's album.\n"
                    "[3] Change a song's length.\n")
-    
-    while(True):
+
+    while True:
         if int(choice) == 1:
             song_title = input("Please enter the song title. ")
 
@@ -153,7 +160,8 @@ def edit_menu(song_client: WOQLClient) -> None:
             positive_integer = False
             while not positive_integer:
                 str_new_length = input("Please enter the new length, as a "
-                                       "positive integer representing the length "
+                                       "positive integer representing "
+                                       "the length "
                                        "of the song in seconds. ")
                 new_length = int(str_new_length)
 
@@ -199,106 +207,108 @@ def find_menu(song_client: WOQLClient) -> None:
                        "[2] Search by song album.\n"
                        "[3] Search by song artist.\n"
                        "[4] Search by song length.\n")
-        if (int(choice) == 1):
+        if int(choice) == 1:
             song_name = input("Enter the name of the song that you are"
                               "searching for: ")
             list_of_indexes = []
             index = 0
             for query in list_of_queries:
-                if (song_name == query[0]['song_length'].split("data/")[1]):
+                if song_name == query[0]['song_length'].split("data/")[1]:
                     list_of_indexes.append(index)
                 index += 1
-                    
-            print("\nFound " + str(len(list_of_indexes)) +
-                    " instance(s) of the song " + song_name +
-                    " in the Database\n")
+
+            print("\nFound {0} instance(s) of the song {1} in the Database\n"
+                  .format(str(len(list_of_indexes)), song_name))
             for index in list_of_indexes:
-                print("Song Name: " + list_of_queries[index][0]
-                                        ['song_length'].split("data/")[1])
-                print("Song Album: " + list_of_queries[index][1]
-                                        ['album']['@value'])
-                print("Song Artist: " + list_of_queries[index][2]
-                                        ['album']['@value'])
-                print("Song Length: " + str(list_of_queries[index][3]
-                                            ['album']['@value']))
+                print("Song Name: " + list_of_queries[index][0]['song_length']
+                      .split("data/")[1])
+                print("Song Album: " +
+                      list_of_queries[index][1]['album']['@value'])
+                print("Song Artist: " +
+                      list_of_queries[index][2]['album']['@value'])
+                print("Song Length: " +
+                      str(list_of_queries[index][3]['album']['@value']))
                 print()
-            
+
             break
 
-        elif (int(choice) == 2):
+        elif int(choice) == 2:
             song_album = input("Enter the album of the song that you are"
-                              "searching for: ")
+                               "searching for: ")
             list_of_indexes = []
             index = 0
             for query in list_of_queries:
-                if (song_album == query[1]['album']['@value']):
+                if song_album == query[1]['album']['@value']:
                     list_of_indexes.append(index)
                 index += 1
-                    
+
             print("\nFound " + str(len(list_of_indexes)) +
-                    " instance(s) of the album" + song_album +
-                    " in the Database\n")
+                  " instance(s) of the album" + song_album +
+                  " in the Database\n")
             for index in list_of_indexes:
-                print("Song Name: " + list_of_queries[index][0]
-                                        ['song_length'].split("data/")[1])
-                print("Song Album: " + list_of_queries[index][1]
-                                        ['album']['@value'])
-                print("Song Artist: " + list_of_queries[index][2]
-                                        ['album']['@value'])
-                print("Song Length: " + str(list_of_queries[index][3]
-                                            ['album']['@value']))
+                print("Song Name: " +
+                      list_of_queries[index][0]['song_length']
+                      .split("data/")[1])
+                print("Song Album: " +
+                      list_of_queries[index][1]['album']['@value'])
+                print("Song Artist: " +
+                      list_of_queries[index][2]['album']['@value'])
+                print("Song Length: " +
+                      str(list_of_queries[index][3]['album']['@value']))
                 print()
 
             break
 
-        elif (int(choice) == 3):
+        elif int(choice) == 3:
             song_artist = input("Enter the artist of the song that you are"
-                              "searching for: ")
+                                "searching for: ")
             list_of_indexes = []
             index = 0
             for query in list_of_queries:
-                if (song_artist == query[2]['album']['@value']):
+                if song_artist == query[2]['album']['@value']:
                     list_of_indexes.append(index)
                 index += 1
-                    
+
             print("\nFound " + str(len(list_of_indexes)) +
-                    " instance(s) of the artist " + song_artist +
-                    " in the Database\n")
+                  " instance(s) of the artist " + song_artist +
+                  " in the Database\n")
             for index in list_of_indexes:
-                print("Song Name: " + list_of_queries[index][0]
-                                        ['song_length'].split("data/")[1])
-                print("Song Album: " + list_of_queries[index][1]
-                                        ['album']['@value'])
-                print("Song Artist: " + list_of_queries[index][2]
-                                        ['album']['@value'])
-                print("Song Length: " + str(list_of_queries[index][3]
-                                            ['album']['@value']))
+                print("Song Name: " +
+                      list_of_queries[index][0]['song_length']
+                      .split("data/")[1])
+                print("Song Album: " +
+                      list_of_queries[index][1]['album']['@value'])
+                print("Song Artist: " +
+                      list_of_queries[index][2]['album']['@value'])
+                print("Song Length: " +
+                      str(list_of_queries[index][3]['album']['@value']))
                 print()
-            
+
             break
-        
-        elif (int(choice) == 4):
+
+        elif int(choice) == 4:
             song_length = input("Enter the length of the song that you are"
-                              "searching for: ")
+                                "searching for: ")
             list_of_indexes = []
             index = 0
             for query in list_of_queries:
-                if (int(song_length) == query[3]['album']['@value']):
+                if int(song_length) == query[3]['album']['@value']:
                     list_of_indexes.append(index)
                 index += 1
-                    
+
             print("\nFound " + str(len(list_of_indexes)) +
-                    " instance(s) of length " + song_length +
-                    " in the Database\n")
+                  " instance(s) of length " + song_length +
+                  " in the Database\n")
             for index in list_of_indexes:
-                print("Song Name: " + list_of_queries[index][0]
-                                        ['song_length'].split("data/")[1])
-                print("Song Album: " + list_of_queries[index][1]
-                                        ['album']['@value'])
-                print("Song Artist: " + list_of_queries[index][2]
-                                        ['album']['@value'])
-                print("Song Length: " + str(list_of_queries[index][3]
-                                            ['album']['@value']))
+                print("Song Name: " +
+                      list_of_queries[index][0]['song_length']
+                      .split("data/")[1])
+                print("Song Album: " +
+                      list_of_queries[index][1]['album']['@value'])
+                print("Song Artist: " +
+                      list_of_queries[index][2]['album']['@value'])
+                print("Song Length: " +
+                      str(list_of_queries[index][3]['album']['@value']))
                 print()
 
             break
@@ -307,39 +317,36 @@ def find_menu(song_client: WOQLClient) -> None:
             print("The option that you have inputted is invalid. Try again.")
 
 
-def speak_menu(song_client: WOQLClient) -> None:
-    song_query = WOQLQuery() \
-        .limit(100) \
-        .triple("v:song_length", "v:artist", "v:album").execute(song_client)
-
-    query_results = song_query.get("bindings")
-    zip_of_queries = zip(*(iter(query_results),) * 4)
-    list_of_queries = list(zip_of_queries)
-    song_choices = []
-    for query in list_of_queries:
-        song_choices.append(query[0]['song_length'].split("data/")[1])
-
+def play_song() -> None:
+    """Downloads and plays a song based on the entered title,
+    if it is hosted on project github."""
     while(True):
-        index = 0
-        song_choice = input("Choose a song that you want to hear info about: "
-                        "Choices are " + str(song_choices))
-        for song in song_choices:
-            if (song_choice == song):
-                break
-        index += 1
-        
-        print("The song that you have inputted is not in the Database. \
-               Try again")
+        song_to_play = input("Enter a song title to be played. "
+                             "It must be hosted on "
+                             "this project's github and in .wav format. ")
+        for query in list_of_queries:
+                if song_to_play == query[0]['song_length'].split("data/")[1]:
+                    break
     
-    outfile = song_choice + ".wav"
-    engine = CreateObject("SAPI.SpVoice")
-    stream = CreateObject("SAPI.SpFileStream")
-    stream.Open(outfile, SpeechLib.SSFMCreateForWrite)
-    engine.AudioOutputStream = stream
+        print("The song that you are looking for is not in the database")
 
-    script = "The song " + list_of_queries[index][0]['song_length'].split("data/")[1] + " is produced by " + list_of_queries[index][1]['album']['@value'] + "and is " + "featured in the album " + list_of_queries[index][1]['album']['@value']
-    engine.speak(script)
+    host_url = "https://raw.githubusercontent.com" \
+               "/Mdinh22/terminus_db_songs/main/"
 
+    try:
+        print("Attempting to download and play the file...\n")
+        url = host_url + song_to_play + ".wav"
+        urllib.request.urlretrieve(url, song_to_play + ".wav")
+
+        pygame.mixer.init()
+        pygame.mixer.music.load(song_to_play + ".wav")
+        pygame.mixer.music.set_volume(0.7)
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            time.sleep(1)
+    except urllib.error.HTTPError:
+        print("File could not be found! Are you sure the file"
+              "is hosted on the github and the name is correct?")
 
 
 def main_menu(song_client: WOQLClient) -> None:
@@ -351,7 +358,7 @@ def main_menu(song_client: WOQLClient) -> None:
                        "[3] Remove a song.\n"
                        "[4] Edit a song.\n"
                        "[5] Find a song.\n"
-                       "[6] Speak a song\n"
+                       "[6] Download/Play a song\n"
                        "[7] Exit.\n")
 
         if int(choice) == 1:
@@ -365,7 +372,7 @@ def main_menu(song_client: WOQLClient) -> None:
         elif int(choice) == 5:
             find_menu(song_client)
         elif int(choice) == 6:
-            speak_menu(song_client)
+            play_song()
         elif int(choice) == 7:
             break
         else:
